@@ -17,6 +17,7 @@
 #include "ofxAutoReloadedShader.h"
 #include "recurNode.h"
 // #inlucde "ofxAutoReloadShader"
+#include "ofxGui.h"
 #define UNIFORM_F_INIT 0.0
 // #include "ofxGui.h"
 // struct fxNode {
@@ -57,6 +58,7 @@ enum shape3D {SHPERE,CUBE,CYLINDER,MODEL};
   //    ofEasyCam* camera;
   //    shape3D shape;
   //    vector<int> shapePoints;
+
   //  ofTexture tex;
   //
   //  }
@@ -74,6 +76,7 @@ public:
   bool isActive;
   ofxNode(Attributes att, Id i, conjur s, bool isa) {
     attr = att;
+
     id = i;
     shader = s;
     isActive = isa;
@@ -94,6 +97,7 @@ typedef unordered_map<Id, Action> actionMap;
 typedef unordered_map<Id, conjur> recurGraph;
 // shaderMap shaders;
 // typedef unordered_map<Id, ofxAutoReloadedShader> shaderMap;
+
 // typedef unordered_map<Id, string> OSCmap;
 
 
@@ -110,6 +114,7 @@ class ofApp : public ofBaseApp{
 	public:
                 Nodemap nodes;
 		void setup();
+
 		void update();
 		void draw();
 		void drawScreen();
@@ -127,6 +132,10 @@ class ofApp : public ofBaseApp{
   bool use3D;
   bool modelWireframe;
   vector<float> modelUniforms;
+  ofParameter<glm::vec2> translate;
+  ofParameter<glm::vec3> cameraPos;
+  ofParameter<int> scale;
+	ofxPanel gui;
   // unordered_map<string, float> modelUniforms; 
   // ofxAutoReloadShader modelShader;
   void printStatus();
@@ -145,11 +154,11 @@ class ofApp : public ofBaseApp{
     vector<Id> nodeOrder;
     ofxOscReceiver receiver;
     ofxOscSender sender;
-  array<int, 3>  sceneTranslation;
-  array<int, 3>  cameraPosition;
+   array<int, 3>  sceneTranslation;
+   array<int, 3>  cameraPosition;
   float cameraDistance;
   array<float, 3>  ofRotation;
-  array<int, 3>  lightColor;
+  // array<int, 3>  lightColor;
   array<float, 3> ofScaler;
   bool translateZero; // whether to zero after each translation (i.e. position state)
   ofLight light;
@@ -187,10 +196,13 @@ class ofApp : public ofBaseApp{
     detour thisDetour;
     conjur mixShader;
     ofImage img;
+  float time;
+  float lastElapsedTime;
   // unordered_map<int, conjur> shaderMap;
     vector<conjur> shaderMap;
   unordered_map<Id, ofTexture> textureMap;
   unordered_map<Id, int> textureCount;
+  ofParameter<ofColor> overlayColor, lightColor;
   //    conjur effectShader0;
   //    conjur effectShader1;
   //    conjur effectShader2;

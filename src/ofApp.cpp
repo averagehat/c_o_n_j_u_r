@@ -53,13 +53,13 @@ void ofApp::setup3D() {
          if (!use3D) return;
          ofLogNotice("ofApp::setup") << sceneConfig.getRawString();
          model.loadModel(sceneConfig["model"].asString());
-         ofLoadImage(modelTex, sceneConfig["textureImage"].asString());
          mesh = model.getMesh(0);
+         ofLoadImage(modelTex, sceneConfig["textureImage"].asString());
          for (int i = 0; i < 3; i++) {
-            cameraPosition[i] =  sceneConfig["camera"]["position"][i].asInt();
-            sceneTranslation[i] =  sceneConfig["ofTranslationMod"][i].asInt();
+           // cameraPosition[i] =  sceneConfig["camera"]["position"][i].asInt();
+           // sceneTranslation[i] =  sceneConfig["ofTranslationMod"][i].asInt();
             ofRotation[i] = sceneConfig["ofRotate"][i].asInt(); // { 0, 1, 0 };
-            lightColor[i] = sceneConfig["light"]["color"][i].asInt();
+            // lightColor[i] = sceneConfig["light"]["color"][i].asInt();
            ofScaler[i] = sceneConfig["ofScaler"][i].asFloat();
          }
          cameraDistance = sceneConfig["camera"]["distance"].asFloat();
@@ -69,14 +69,20 @@ void ofApp::setup3D() {
        modelShader.load(sceneConfig["vertShader"].asString(), sceneConfig["fragShader"].asString());
         lightOn = sceneConfig["light"]["on"].asBool();
          lightTiedToCamera = sceneConfig["light"]["tiedToCamera"].asBool();
-         camera.setPosition(0, 0, 525);
+	gui.setup("panel"); // most of the time you don't need a name but don't forget to call setup
+	// gui.add(filled.set("bFill", true));
+	gui.add(scale.set("scale", 50, 0, 300));
+   gui.add(cameraPos.set("cameraPos",glm::ivec3(0, 0, 525), glm::ivec3(0, 0, 0), glm::ivec3(2000, 2000, 2000)));
+   gui.add(translate.set("translate",glm::ivec2(0, 0), glm::ivec2(-100, -100), glm::ivec2(100, 100)));
+                
+    gui.add(lightColor.set("Light Color", ofColor(255)));
 }
 }
 void ofApp::setup(){
     
     ofBackground(0, 0, 0);
     ofSetVerticalSync(false);
-    ofHideCursor();    
+    // ofHideCursor();    
     //ofSetFullscreen(1);
     // toggle these for dev mode ?
     framerate = 30;
@@ -85,7 +91,7 @@ void ofApp::setup(){
     time = 0;
     
 
-    setFrameSizeFromFile();
+    // setFrameSizeFromFile();
 
     receiver.setup(SUBPORT);
     sender.setup("localhost", 9000);
@@ -136,7 +142,7 @@ void ofApp::setup(){
     fbo.allocate(settings);
     
     fbo.begin();
-        ofClear(0, 0, 0, 0);
+        ofClear(0, 0, 0);
         ofClearAlpha();
     fbo.end();
 
@@ -161,20 +167,10 @@ void ofApp::update(){
     bPlayer.update();
     cPlayer.update();
     videoGrabber.update();
-   // TODO: try just putting the modelShader output itnto the map by its id. [
-    // effectInput = {};
   if (use3D) {
-    // TODO: fix to be equivalent to conjur::getTime()
-    float currentElapsedTime = ofGetElapsedTimef();
-    float diff = lastElapsedTime - currentElapsedTime;
-    float speed = 1;
-    time = time + (speed*diff);
-    lastElapsedTime = currentElapsedTime;
+    time = ofGetElapsedTimef();	//Get time in seconds
     fbo.begin();
     effectShaderInput = true;
-    ofEnableDepthTest();	//Enable z-buffering
-      //Move the coordinate center to screen's center
-    // ofTranslate( ofGetWidth()*sceneTranslation[0],  ofGetHeight()*sceneTranslation[1], 1*sceneTranslation[2] );
       if (lightTiedToCamera) {
         camera.begin();
         if (lightOn) light.enable();
@@ -187,23 +183,28 @@ void ofApp::update(){
       ofClear(0, 0, 0, 255);
       ofBackground(255);
       modelShader.begin();
-      camera.setDistance(cameraDistance); // cameraPosition[0], cameraPosition[1], cameraPosition[2]);
-     // rotate with vert shader for now
-      modelShader.setUniform1f("u_time", time);
-     modelShader.setUniformTexture( "u_tex0", modelTex, 0 );
-     ofMaterial mat = model.getMaterialForMesh(0);
-     modelShader.setUniform4f("uMaterialColor", ofColor(mat.getAmbientColor()));
-     // render.setUniform1f( "twistFactor", twistFactor );
-     // mat.getAmbientColor();
+      camera.setDistance(cameraDistance);
+      modelShader.setUniform1f( "size", 0);
+      modelShader.setUniform1f( "twistFactor", 0 );
+      modelShader.setUniform1i( "lightingEnabled", lightOn );
+      // modelShader.setUniform1f("u_time", time);
+     modelShader.setUniformTexture( "tex0", modelTex, 0 );
+     // ofMaterial mat = model.getMaterialForMesh(0);
+     // modelShader.setUniform4f("uMaterialColor", ofColor(mat.getAmbientColor()));
      modelShader.setUniform1i( "lightingEnabled", lightOn);
-      for( int i = 0; i < modelUniforms.size(); i++ ) {
-        modelShader.setUniform1f("u_x" + ofToString(i), modelUniforms[i]);        
-        }
-      if (lightOn) modelShader.setUniform3f( "lightColor", float(lightColor[0]) / 255.0f, float(lightColor[1]) / 255.0f, float(lightColor[2]) / 255.0f );
+     //      for( int i = 0; i < modelUniforms.size(); i++ ) {
+     //        modelShader.setUniform1f("u_x" + ofToString(i), modelUniforms[i]);        
+     //        }
+      if (lightOn) {
+        // modelShader.setUniform3f( "lightColor", float(lightColor[0]) / 255.0f, float(lightColor[1]) / 255.0f, float(lightColor[2]) / 255.0f );
+
+        modelShader.setUniform3f( "lightColor", float(lightColor->r) / 255.0f, float(lightColor->g) / 255.0f, float(lightColor->b) / 255.0f );
+      }
       ofPushMatrix();	//Store the coordinate system
       // ofScale( ofScaler[0], ofScaler[1], ofScaler[2]);
-      //   ofScale(50);
-      //   ofTranslate(-0.4, -6);
+      camera.setPosition(cameraPos);
+      ofScale(scale);
+      ofTranslate(translate);
     if (!modelWireframe) {mesh.draw();}
     else {mesh.drawWireframe();}
     ofPopMatrix();	//Restore the coordinate system
@@ -212,8 +213,8 @@ void ofApp::update(){
     if (lightOn) light.disable();
     camera.end();
     ofDisableDepthTest();
+    gui.draw();
     fbo.end();
-    
     textureMap["model"] = fbo.getTexture(); // doesn't do anything yet
     
   }
@@ -239,6 +240,10 @@ void ofApp::drawScreen(){
       fbo = applyEffectShaderChain(effectInput);
 
      }
+    else if (use3D && !useShader) { // don't draw the fbo again
+      fbo.draw(0, 0);
+      gui.draw();
+    }
      else{
         fbo.begin();
         // TODO remove commenting and see if fbo.draw can be dropped
@@ -270,6 +275,7 @@ ofFbo ofApp::applyEffectShaderChain(vector<ofTexture> effectInput){
                       effectInput.insert(effectInput.begin(), (textureMap[s]));
                       // textureCount[s]--;
                     }
+                    graph[id].shader.setUniform2f( "u_resolution", glm::vec2(ofGetWidth(), ofGetHeight()) );
                       fbo = graph[id].apply(effectInput);
                       textureMap[id] = fbo.getTexture();
                       // tex = graph[id].render(ofGetWidth(), ofGetHeight(), effectInput);
